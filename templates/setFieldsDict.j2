@@ -1,0 +1,70 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| Generated automatically by foam_generator.py                               |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      setFieldsDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Strategy: the default value is set to the OUTERMOST layer.
+// Then each inner layer overwrites the region it occupies, working inward.
+// This ensures every cell gets the correct thermal diffusivity (DT = α = λ/ρcp).
+
+defaultFieldValues
+(
+    volScalarFieldValue DT {{ DT_default }}
+);
+
+regions
+(
+{% if geometry == "planar" %}
+{% for layer in layers_computed %}
+    // Layer: {{ layer.name }} | lambda={{ layer.lambda }} W/m·K | DT={{ "%.4e" | format(layer.DT) }} m²/s
+    boxToCell
+    {
+        box ( {{ "%.6f" | format(layer.x_start) }} -1 -1 )
+            ( {{ "%.6f" | format(layer.x_end)   }} 2  2  );
+        fieldValues
+        (
+            volScalarFieldValue DT {{ "%.6e" | format(layer.DT) }}
+        );
+    }
+{% endfor %}
+{% elif geometry == "cylindrical" %}
+    // cylinderToCell selects ALL cells within radius R from the Z axis.
+    // Applying from outer to inner means each call overwrites the previous → correct profile.
+{% for layer in layers_computed[:-1] | reverse %}
+    // Layer: {{ layer.name }} | DT={{ "%.4e" | format(layer.DT) }} m²/s | R_out={{ "%.6f" | format(layer.x_end) }} m
+    cylinderToCell
+    {
+        p1      (0 0 -100);
+        p2      (0 0  100);
+        radius  {{ "%.6f" | format(layer.x_end) }};
+        fieldValues
+        (
+            volScalarFieldValue DT {{ "%.6e" | format(layer.DT) }}
+        );
+    }
+{% endfor %}
+{% elif geometry == "spherical" %}
+    // Same strategy as cylindrical, using sphereToCell instead.
+{% for layer in layers_computed[:-1] | reverse %}
+    // Layer: {{ layer.name }} | DT={{ "%.4e" | format(layer.DT) }} m²/s | R_out={{ "%.6f" | format(layer.x_end) }} m
+    sphereToCell
+    {
+        centre  (0 0 0);
+        radius  {{ "%.6f" | format(layer.x_end) }};
+        fieldValues
+        (
+            volScalarFieldValue DT {{ "%.6e" | format(layer.DT) }}
+        );
+    }
+{% endfor %}
+{% endif %}
+);
+
+// ************************************************************************* //

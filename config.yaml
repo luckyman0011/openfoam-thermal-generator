@@ -1,0 +1,92 @@
+# ============================================================
+#  OpenFOAM Thermal Simulation — Configuration File
+#
+#  Edit ONLY this file, then run:
+#      python foam_generator.py --config config.yaml
+# ============================================================
+
+case_name: "Thermal_Simulation"
+
+# ── GEOMETRY ────────────────────────────────────────────────
+# "planar"      → flat wall, temperature gradient along X axis
+# "cylindrical" → tube / pipe, gradient along the radius
+# "spherical"   → spherical shell, gradient along the radius
+geometry: "planar"
+
+# Extrusion dimensions (planar only — affects visualisation, not physics)
+dimensions:
+  width:  0.05   # [m]  Y dimension
+  height: 0.05   # [m]  Z dimension
+
+# Inner radius — only used for cylindrical and spherical geometries
+r_inner: 0.05   # [m]  distance from the centre to the inner surface
+
+# Angular cells per sector — only for cylindrical / spherical
+# More cells = smoother shape in ParaView
+#   cylindrical: 12 is enough  |  spherical: 16+ for a smooth sphere
+n_angular: 16
+
+# ── MATERIAL LAYERS ─────────────────────────────────────────
+# Order: INNER layer first (closest to centre) → OUTER layer last
+#
+# lambda    [W/m·K]  thermal conductivity
+# rho       [kg/m³]  density
+# cp        [J/kg·K] specific heat capacity
+# thickness [m]      layer thickness
+# cells              number of cells across the thickness (more = more accurate)
+
+layers:
+  - name: "steel"
+    thickness: 0.01
+    cells: 10
+    lambda: 50.0
+    rho: 7800.0
+    cp: 500.0
+    convection: false
+
+  - name: "insulation"
+    thickness: 0.05
+    cells: 30
+    lambda: 0.04
+    rho: 30.0
+    cp: 1000.0
+    convection: false
+
+  - name: "copper"
+    thickness: 0.01
+    cells: 10
+    lambda: 385.0
+    rho: 8900.0
+    cp: 385.0
+    convection: false
+
+# ── BOUNDARY CONDITIONS ──────────────────────────────────────
+# "inner" → INNER surface  (x=0 for planar  |  r=r_inner for cylindrical/spherical)
+# "outer" → OUTER surface  (x=total for planar  |  r=r_outer for cylindrical/spherical)
+#
+# Available types:
+#   fixedValue   → constant temperature imposed on the surface (specify "value" in K)
+#   zeroGradient → insulated surface, zero heat flux (no heat crosses the boundary)
+#   convection   → heat exchange with a surrounding fluid (specify "h" and "Tf")
+
+boundary_conditions:
+  inner:
+    type: "fixedValue"
+    value: 800.0          # [K]  temperature imposed on the inner surface
+
+  outer:
+    type: "fixedValue"
+    value: 300.0          # [K]  temperature imposed on the outer surface
+
+# Convection example:
+#   type: "convection"
+#   h:  50.0              # [W/m²K]  convection heat transfer coefficient
+#   Tf: 280.0             # [K]      surrounding fluid temperature
+
+# ── SIMULATION PARAMETERS ────────────────────────────────────
+simulation:
+  solver: "laplacianFoam"   # transient heat conduction solver
+  endTime: 500              # [s]  total simulation time
+  deltaT: 0.1               # [s]  time step
+  writeInterval: 50         # [s]  how often to save results
+  maxCo: 0.5

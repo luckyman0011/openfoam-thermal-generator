@@ -1,0 +1,115 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| Generated automatically by foam_generator.py                               |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      blockMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+scale 1;
+
+{% if geometry == "spherical" %}
+// ── Projection geometry definitions ──────────────────────────────────────
+// OpenFOAM will project every point on the marked faces exactly onto these
+// spheres. This guarantees a perfectly round sphere — not a linear interpolation.
+geometry
+{
+{% for r in radii %}
+    sphere_{{ loop.index0 }}
+    {
+        type    searchableSphere;
+        centre  (0 0 0);
+        radius  {{ "%.8f" | format(r) }};
+    }
+{% endfor %}
+}
+
+{% elif geometry == "cylindrical" %}
+// ── Projection geometry definitions ──────────────────────────────────────
+geometry
+{
+{% for r in radii %}
+    cylinder_{{ loop.index0 }}
+    {
+        type    searchableCylinder;
+        point1  (0 0 -1e6);
+        point2  (0 0  1e6);
+        radius  {{ "%.8f" | format(r) }};
+    }
+{% endfor %}
+}
+
+{% endif %}
+vertices
+(
+{% for v in vertices %}
+    {{ v }}
+{% endfor %}
+);
+
+blocks
+(
+{% for b in blocks %}
+    {{ b }}
+{% endfor %}
+);
+
+edges
+(
+{% for arc in arcs %}
+    {{ arc }}
+{% endfor %}
+);
+
+{% if geometry != "spherical" %}
+defaultPatch
+{
+    name frontAndBack;
+    type empty;
+}
+
+{% endif %}
+{% if project_faces %}
+// ── Face projection onto geometry surfaces ───────────────────────────────
+// Each face listed here is forced to lie exactly on the sphere/cylinder surface.
+// Without this section, OpenFOAM interpolates linearly → flat face centres.
+faces
+(
+{% for geom_name, face_verts in project_faces %}
+    project ({{ face_verts }}) {{ geom_name }}
+{% endfor %}
+);
+
+{% endif %}
+boundary
+(
+    // "interior" = inner surface  (r_inner for radial | x=0 for planar)
+    interior
+    {
+        type wall;
+        faces
+        (
+{% for f in interior_faces %}
+            ({{ f }})
+{% endfor %}
+        );
+    }
+
+    // "exterior" = outer surface  (r_outer for radial | x=total for planar)
+    exterior
+    {
+        type wall;
+        faces
+        (
+{% for f in exterior_faces %}
+            ({{ f }})
+{% endfor %}
+        );
+    }
+);
+
+// ************************************************************************* //

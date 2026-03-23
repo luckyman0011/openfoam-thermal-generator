@@ -1,0 +1,63 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| Generated automatically by foam_generator.py                               |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    location    "0";
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform {{ T_init }};
+
+boundaryField
+{
+    // Inner surface  (r_inner for radial geometries  |  x=0 for planar)
+    interior
+    {
+{% if bc_inner.type == "fixedValue" %}
+        type            fixedValue;
+        value           uniform {{ bc_inner.value }};
+{% elif bc_inner.type == "zeroGradient" %}
+        type            zeroGradient;
+{% elif bc_inner.type == "convection" %}
+        type            externalWallHeatFluxTemperature;
+        mode            coefficient;
+        h               uniform {{ bc_inner.h }};
+        Ta              uniform {{ bc_inner.Tf }};
+        value           uniform {{ bc_inner.Tf }};
+{% endif %}
+    }
+
+    // Outer surface  (r_outer for radial geometries  |  x=total for planar)
+    exterior
+    {
+{% if bc_outer.type == "fixedValue" %}
+        type            fixedValue;
+        value           uniform {{ bc_outer.value }};
+{% elif bc_outer.type == "zeroGradient" %}
+        type            zeroGradient;
+{% elif bc_outer.type == "convection" %}
+        type            externalWallHeatFluxTemperature;
+        mode            coefficient;
+        h               uniform {{ bc_outer.h }};
+        Ta              uniform {{ bc_outer.Tf }};
+        value           uniform {{ bc_outer.Tf }};
+{% endif %}
+    }
+{% if geometry != "spherical" %}
+
+    // Extrusion faces — no physical meaning, ignored by the solver (type "empty")
+    frontAndBack
+    {
+        type            empty;
+    }
+{% endif %}
+}
+
+// ************************************************************************* //
