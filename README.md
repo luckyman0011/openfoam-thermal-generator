@@ -43,29 +43,30 @@ For cylindrical and spherical cases the mesh uses `searchableCylinder` / `search
 
 **Requirements:** OpenFOAM 13, Python 3.8+, `pyyaml`, `jinja2`
 
+
+**Step 1 — Run the generator and answer the prompts:**
+
 ```bash
-pip install pyyaml jinja2
+python3 generator.py
 ```
 
-**Option 1 — Interactive wizard** (asks you everything step by step):
+The wizard asks for geometry, material layers, boundary conditions, and simulation time.
+At the end it creates a folder with the complete OpenFOAM case inside.
+
+**Step 2 — Run the simulation:**
 
 ```bash
-python foam_generator.py
-```
-
-**Option 2 — Config file** (edit `config.yaml`, then run):
-
-```bash
-python foam_generator.py --config config.yaml
-```
-
-**Then run the simulation:**
-
-```bash
-cd Thermal_Simulation
+cd <your_case_name>
 ./Allrun
-paraFoam          # open in ParaView
 ```
+
+**Step 3 — Visualise:**
+
+```bash
+paraFoam
+```
+
+That's it. No manual file editing required.
 
 ---
 
@@ -133,7 +134,6 @@ Run it:
 `setFields` applies layers from outside in, each overwriting the previous region. This handles the multi-layer case correctly regardless of geometry.
 
 **Solver:** `laplacianFoam` (transient heat conduction). The field being solved is `T`; `DT` (thermal diffusivity α) is set per cell by `setFields`.
-
 
 ---
 
