@@ -9,11 +9,13 @@
 
 My heat transfer professor doesn't allow internet access during exams.
 
-That means every time I need to analyse heat conduction through a layered wall, a pipe, or a spherical shell, I have to work through the full analytical solution by hand — which is fine conceptually, but slow and error-prone under exam pressure.
+That means every time I need to analyse heat conduction through a layered wall, a pipe, or a spherical shell, I have to work through the full analytical solution by hand — which is fine conceptually, but slow and error-prone under exam pressure when you're simultaneously trying to remember four boundary condition formulas and not spill coffee on your exam sheet.
 
 So I built this tool. The idea is simple: describe your geometry and materials in a config file (or answer a few prompts in the terminal), and the generator produces a complete, ready-to-run OpenFOAM case. Run it, open ParaView, and you have a visual simulation of the temperature profile in seconds.
 
-It turns out building it taught me more about heat transfer, mesh topology, and numerical methods than any problem set had — which I suspect is exactly the kind of irony my professor would appreciate.
+Will my professor actually let me use it during the exam? Genuinely no idea. Probably not — not because he's against it (he's actually one of the more tech-forward professors I've had, the kind that gets genuinely excited about numerical methods at 8am), but because the university regulation is what it is. So this might be the most elaborate study tool that never gets used during an actual exam.
+
+Either way, building it taught me more about heat transfer, mesh topology, and numerical methods than any problem set had — which I suspect is exactly the kind of irony my professor would appreciate.
 
 ---
 
@@ -36,6 +38,18 @@ Three geometry modes are supported:
 | `spherical` | Full spherical shell | Temperature varies radially |
 
 For cylindrical and spherical cases the mesh uses `searchableCylinder` / `searchableSphere` projection, so the geometry is mathematically exact — not a faceted approximation.
+
+**What the solver actually does:**
+
+The simulation runs `laplacianFoam`, which solves the transient heat conduction equation at every cell, at every time step:
+
+$$\frac{\partial T}{\partial t} = \nabla \cdot (\alpha \, \nabla T)$$
+
+where $\alpha = \frac{\lambda}{\rho \, c_p}$ is the thermal diffusivity $[\text{m}^2/\text{s}]$.
+
+In plain English: the rate of change of temperature at any point depends on how much heat is flowing in minus how much is flowing out — weighted by how fast that material conducts heat. The solver marches this forward in time until you tell it to stop (or until the solution stops changing, which means steady state).
+
+Each material layer gets its own $\alpha$ assigned by `setFields` before the solver starts, so the discontinuities at layer interfaces are handled correctly.
 
 ---
 
